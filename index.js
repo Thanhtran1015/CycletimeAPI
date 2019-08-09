@@ -4,10 +4,11 @@ const Joi = require('joi');
 const logger = require('./logger');
 const express = require('express');
 const app = express();
-
+var cors = require('cors');
+app.use(cors());
 //Khai bao thu vien Mongodb
 const MongoClient = require('mongodb').MongoClient;
-const url = "mongodb://localhost:27017";
+const url = "mongodb://10.4.0.57:27017";
 
 // Database Name
 const dbName = 'IoT';
@@ -168,22 +169,24 @@ app.get('/api/cycleTimes', (req, res) => {
                 }
                 
             }
+
             var newBestCT = Math.round((result[0].MinRealTime / 1000) * 10) / 10;
+            var newWorstCT = Math.round((result[0].MaxRealTime / 1000) * 10) / 10;
             var totalTimeInSecs = result[0].TotalTime / 1000;
             var nowInSecs = date2.getHours() * 3600 + date2.getMinutes() * 60 + date2.getSeconds();
             var from0to730InSecs = 7 * 3600 + 30 * 60;
             var from730ToNowInSecs = nowInSecs - from0to730InSecs;
-            var newAvailability = Math.round((result[0].UpTime * 100 / from730ToNowInSecs) * 10) / 10;
+            var newAvailability = Math.round((result[0].UpTime * 100 / 1000 / from730ToNowInSecs) * 10) / 10;
             var lastCreatedTime = result[0].CycleTimeCollection[9].c;
             var lastCreatedHour = parseInt(lastCreatedTime.substring(0, 2));
             var lastCreatedMinute = parseInt(lastCreatedTime.substring(3, 5));
             var lastCreatedSecond = parseInt(lastCreatedTime.substring(6, 8));
-
+            
             var onGoingTime = (nowHour - lastCreatedHour) * 3600 + (nowMinute - lastCreatedMinute) * 60 + (nowSecond - lastCreatedSecond)
 
-            cycleTimes.push({ id: newId, operationId: 'M1AC01', operationName: 'Cutting', standardCT: 30.0, cycleTimeCollection: newCycleTimeCollection, averageCT: newAverageCT, bestCT: newBestCT, availability: newAvailability });
+            cycleTimes.push({ id: newId, operationId: 'M1AC01', operationName: 'Cutting', standardCT: 30.0, cycleTimeCollection: newCycleTimeCollection, averageCT: newAverageCT, bestCT: newBestCT, worstCT: newWorstCT, availability: newAvailability });
             var cycleTimesToSend = [];
-            cycleTimesToSend.push({ id: newId, operationId: 'M1AC01', operationName: 'Cutting', standardCT: 30.0, cycleTimeCollection: newCycleTimeCollection, averageCT: newAverageCT, bestCT: newBestCT, availability: newAvailability, lastH: lastCreatedHour, lastM: lastCreatedMinute, lastS: lastCreatedSecond, now: nowDateTimeString, onGoing: onGoingTime, from0730ToNow: from730ToNowInSecs, totalTime: totalTimeInSecs });
+            cycleTimesToSend.push({ id: newId, operationId: 'M1AC01', operationName: 'Cutting', standardCT: 30.0, cycleTimeCollection: newCycleTimeCollection, averageCT: newAverageCT, bestCT: newBestCT, worstCT: newWorstCT, availability: newAvailability, lastH: lastCreatedHour, lastM: lastCreatedMinute, lastS: lastCreatedSecond, now: nowDateTimeString, onGoing: onGoingTime, from0730ToNow: from730ToNowInSecs, totalTime: totalTimeInSecs });
             res.send(cycleTimesToSend);
             //db.close();
 
@@ -324,5 +327,5 @@ app.get('/api/componentCollections', (req, res) => {
 });
 
 //PORT
-const port = process.env.PORT || 1904;
+const port = process.env.PORT || 8041
 app.listen(port, () => console.log(`Listening on port ${port}...`));
